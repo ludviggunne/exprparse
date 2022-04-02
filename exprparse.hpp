@@ -59,7 +59,7 @@ namespace exprparse {
         public:
             OperatorNode(Operator op) : _operator(op) {}
 
-            T Eval(Status &status) const override
+            virtual T Eval(Status &status) const override
             {
 
                 T leftValue  = _left->Eval(status);
@@ -107,7 +107,7 @@ namespace exprparse {
         public:
             VariableNode(const std::shared_ptr<T> &value) : _value(value) {}
 
-            T Eval(Status &status) const override { return *_value; }
+            virtual T Eval(Status &status) const override { return *_value; }
 
         private:
             std::shared_ptr<T> _value;
@@ -120,7 +120,7 @@ namespace exprparse {
         public:
             ConstantNode(T value) : _value(value) {}
 
-            T Eval(Status &status) const override { return _value; }
+            virtual T Eval(Status &status) const override { return _value; }
 
         private:
             const T _value;
