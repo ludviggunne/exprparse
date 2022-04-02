@@ -303,7 +303,10 @@ namespace exprparse {
             node->LinkRight(ParseSubString(it + 1, end,  status));
             //                             ^^^^^^ --- plus one to omit operator        
 
-            return node;
+            if(status == Success)
+                return node;
+            else
+                return nullptr;
 
         } else {
             
