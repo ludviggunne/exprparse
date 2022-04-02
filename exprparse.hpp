@@ -42,7 +42,7 @@ namespace exprparse {
     template<typename T>
     void SetVariable(Variable<T> &var, T value) { *var = value; }
 
-    namespace internal {
+    namespace _internal {
 
         template<typename T>
         class Node {
@@ -158,12 +158,12 @@ namespace exprparse {
         Status Parse(std::string expr_string);
 
     private:
-        std::shared_ptr<internal::Node<T>> ParseSubString(
+        std::shared_ptr<_internal::Node<T>> ParseSubString(
             std::string::const_iterator begin, std::string::const_iterator end, Status &status);
 
     private:
         std::map<std::string, std::shared_ptr<T>> _symbols;
-        std::shared_ptr<internal::Node<T>> _base;
+        std::shared_ptr<_internal::Node<T>> _base;
     };
 
 
@@ -190,7 +190,7 @@ namespace exprparse {
 
 #define _exprparse_parse_error(error) { status = error; return nullptr; }
     template<typename T>
-    std::shared_ptr<internal::Node<T>> Expression<T>::ParseSubString(
+    std::shared_ptr<_internal::Node<T>> Expression<T>::ParseSubString(
         std::string::const_iterator begin, std::string::const_iterator end, Status &status)
     {
         EP_LOG(" Parsing sub-expression " << std::string(begin, end));
@@ -198,7 +198,7 @@ namespace exprparse {
         auto it = begin;
         int  bracket_depth        = 0;
         char operator_symbol      = '\0';
-        bool found_plus_or_minus = false;
+        bool found_plus_or_minus  = false;
 
         while(it != end) {
             
@@ -248,7 +248,7 @@ namespace exprparse {
 
         if(operator_symbol != '\0') {
 
-            using namespace internal;
+            using namespace _internal;
 
             std::shared_ptr<OperatorNode<T>> node;
 
@@ -295,7 +295,7 @@ namespace exprparse {
                 end--;
 
                 if(begin == end) // Empty bracket
-                    return std::make_shared<internal::ConstantNode<T>>(T(0));
+                    return std::make_shared<_internal::ConstantNode<T>>(T(0));
 
                 if(begin > end) // Syntax error
                     _exprparse_parse_error(Error_Syntax_Error);
@@ -312,7 +312,7 @@ namespace exprparse {
             if(!ss.fail()) {
                 EP_LOG("   Appending constant node: " << value);
 
-                return std::make_shared<internal::ConstantNode<T>>(value);
+                return std::make_shared<_internal::ConstantNode<T>>(value);
             } 
             else 
             {
@@ -327,8 +327,8 @@ namespace exprparse {
                 {
                     EP_LOG("   Appending variable node: " << it->first);
 
-                    return std::make_shared<internal::VariableNode<T>>(it->second);
-                    //                                          SYMBOL --- ^^^^^^
+                    return std::make_shared<_internal::VariableNode<T>>(it->second);
+                    //                                           SYMBOL --- ^^^^^^
                 }
             }
 
