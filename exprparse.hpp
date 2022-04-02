@@ -10,7 +10,7 @@
 
 #ifdef EP_DEBUG
 #include <iostream>     // std::cout
-#define EP_LOG(x) std::cout << x << "\n";
+#define EP_LOG(x) std::cout << x << "\n\n";
 #else
 #define EP_LOG(x)
 #endif
@@ -192,7 +192,7 @@ namespace exprparse {
     std::shared_ptr<_internal::Node<T>> Expression<T>::ParseSubString(
         std::string::const_iterator begin, std::string::const_iterator end, Status &status)
     {
-        EP_LOG(" Parsing sub-expression " << std::string(begin, end));
+        EP_LOG(" Parsing sub-expression '" << std::string(begin, end) << "'");
 
         auto it = begin;
         int  bracket_depth        = 0;
@@ -254,22 +254,22 @@ namespace exprparse {
             switch(operator_symbol) {
                 case '+':
                     node = std::make_shared<OperatorNode<T>>(OperatorNode<T>::Operator::Add);
-                    EP_LOG("   Appending ADD node");
+                    EP_LOG("   Appending Addition node");
                     break;
 
                 case '-':
                     node = std::make_shared<OperatorNode<T>>(OperatorNode<T>::Operator::Sub);
-                    EP_LOG("   Appending SUB node");
+                    EP_LOG("   Appending Subtraction node");
                     break;
 
                 case '*':
                     node = std::make_shared<OperatorNode<T>>(OperatorNode<T>::Operator::Mul);
-                    EP_LOG("   Appending MUL node");
+                    EP_LOG("   Appending Multiplication node");
                     break;
 
                 case '/':
                     node = std::make_shared<OperatorNode<T>>(OperatorNode<T>::Operator::Div);
-                    EP_LOG("   Appending DIV node");
+                    EP_LOG("   Appending Division node");
                     break;
 
                 default:
