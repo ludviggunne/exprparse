@@ -1,16 +1,15 @@
 #ifndef _exprparse_h_
 #define _exprparse_h_
 
-#include <map>
-#include <string>
-#include <memory>
-#include <vector>
-#include <sstream>
-#include <algorithm>
-#include <type_traits>
+#include <map>          // std::map
+#include <string>       // std::string
+#include <memory>       // std::shared_ptr
+#include <sstream>      // std::stringstream
+#include <algorithm>    // std::remove
+#include <type_traits>  // std::is_floating_point
 
 #ifdef EP_DEBUG
-#include <iostream>
+#include <iostream>     // std::cout
 #define EP_LOG(x) std::cout << x << "\n";
 #else
 #define EP_LOG(x)
