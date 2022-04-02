@@ -285,7 +285,7 @@ namespace exprparse {
                 _exprparse_parse_error(Error_Syntax_Error);
 
             node->LinkRight(ParseSubString(it + 1, end,  status));
-            //                             ^^^^^^ --- plus one to ommit operator        
+            //                             ^^^^^^ --- plus one to omit operator        
 
             return node;
 
