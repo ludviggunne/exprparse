@@ -29,33 +29,42 @@ int main() {
     // Register variables
     auto x = exprparse::CreateVariable<double>(0);
     auto y = exprparse::CreateVariable<double>(0);
+    auto z = exprparse::CreateVariable<double>(0);
+
     e.RegisterVariable("x", x);
     e.RegisterVariable("y", y);
+    e.RegisterVariable("z", z);
 
 
 
     // Parse expression
     exprparse::Status status;
-    status = e.Parse("1 + 1 / (x + y)");
+    status = e.Parse("-(2 * x + y) / z");
 
     if(status != exprparse::Success)
-        std::cout << "Failed to parse expression!" << std::endl;
+    {
+        std::cout << "Couldn't parse expression string" << std::endl;
+        return -1;
+    }
 
 
 
     // Set variables
-    exprparse::SetVariable(x, 2.0);
-    exprparse::SetVariable(y, 1.0);
-
+    exprparse::SetVariable(x, 3.0);
+    exprparse::SetVariable(y, 4.0);
+    exprparse::SetVariable(z, 2.0);
 
 
     // Evaluate expression
-    double z = e.Eval(status);
+    double u = e.Eval(status);
 
     if(status != exprparse::Success)
-        std::cout << "Failed to evaluate expression!" << std::endl;
+    {
+        std::cout << "Couldn't evaluate expression" << std::endl;
+        return -1;
+    }
 
-    std::cout << z << std::endl;
+    std::cout << "Expression evaluated to: " << u << std::endl;
 
     return 0;
 
