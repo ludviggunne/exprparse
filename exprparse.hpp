@@ -277,7 +277,13 @@ namespace exprparse {
                     break;
             }
 
-            node->LinkLeft( ParseSubString(begin,  it,   status));
+            if(begin != it)
+                node->LinkLeft( ParseSubString(begin, it, status));
+            else if(operator_symbol == '-') // Negative sign (-x becomes 0 - x)
+                node->LinkLeft(std::make_shared<_internal::ConstantNode<T>>(T(0)));
+            else
+                _exprparse_parse_error(Error_Syntax_Error);
+
             node->LinkRight(ParseSubString(it + 1, end,  status));
             //                             ^^^^^^ --- plus one to ommit operator        
 
