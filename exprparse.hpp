@@ -7,6 +7,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <type_traits>
 
 #ifdef EP_DEBUG
 #include <iostream>
@@ -131,6 +132,7 @@ namespace exprparse {
 
     template<typename T>
     class Expression {
+        static_assert(std::is_floating_point<T>::value, "T is not floating point type");
 
     public:
         Status RegisterVariable(const std::string &name, const Variable<T> &value)
