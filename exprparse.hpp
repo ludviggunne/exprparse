@@ -179,10 +179,8 @@ namespace exprparse {
         Status status = Success;
         _base = ParseSubString(expr_string.begin(), new_end, status);
 
-        if(status == Success)
-            _symbols.clear(); // Successfully parsed, clear symbol table
-        else
-            _base.reset();    // Don't clear symbol table, we might try again
+        if(status != Success)
+            _base.reset();
 
         return status;
     }
