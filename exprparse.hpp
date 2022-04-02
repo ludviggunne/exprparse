@@ -29,10 +29,12 @@ namespace exprparse {
         Error_Syntax_Error,
 
         Error_Unknown
+
     };
 
 
-    // TODO: Custom ref-counted class ???
+
+    // TODO?: Custom ref-counted class OR wrapper class for std::shared_ptr
     template<typename T>
     using Variable = std::shared_ptr<T>;
 
@@ -41,6 +43,8 @@ namespace exprparse {
 
     template<typename T>
     void SetVariable(Variable<T> &var, T value) { *var = value; }
+
+
 
     namespace _internal {
 
@@ -66,7 +70,8 @@ namespace exprparse {
                 T rightValue = _right->Eval(status);
 
                 switch(_operator) {
-
+                    
+                    // TODO?: Use derived classes for each operator instead of enum + switch
                     case Operator::Add:
                         return leftValue + rightValue;
 
@@ -129,8 +134,10 @@ namespace exprparse {
     }
 
 
+
     template<typename T>
     class Expression {
+        
         static_assert(std::is_floating_point<T>::value, "T is not floating point type");
 
     public:
@@ -147,7 +154,7 @@ namespace exprparse {
         {
             EP_LOG("Evaluating expression");
 
-            if(!_base) {
+            if(!_base) { // The AST is empty
                 status = Error_Not_Compiled;
                 return T(0);
             } 
@@ -174,12 +181,14 @@ namespace exprparse {
     {
         EP_LOG("Parsing expression");
 
+        // Remove blank spaces
         auto new_end = std::remove(expr_string.begin(), expr_string.end(), ' ');
 
+        // Parse
         Status status = Success;
         _base = ParseSubString(expr_string.begin(), new_end, status);
 
-        if(status != Success)
+        if(status != Success) // Clear the AST since it's invalid
             _base.reset();
 
         return status;
@@ -194,10 +203,10 @@ namespace exprparse {
     {
         EP_LOG(" Parsing sub-expression '" << std::string(begin, end) << "'");
 
-        auto it = begin;
-        int  bracket_depth        = 0;
+        auto it                   = begin;
+        int  bracket_depth        = 0;     
         char operator_symbol      = '\0';
-        bool found_plus_or_minus  = false;
+        bool found_plus_or_minus  = false; // +/- has precedence over *// when constructing tree
 
         while(it != end) {
             
@@ -219,11 +228,11 @@ namespace exprparse {
             it++;
         }
 
-        if(bracket_depth != 0)
+        if(bracket_depth != 0) // Start- and end brackets should cancel out
             _exprparse_parse_error(Error_Syntax_Error);
 
-        if(!found_plus_or_minus) {
-
+        if(!found_plus_or_minus) { // Only pick * or / operators if + or - aren't found
+            
             it = begin;
             while(it != end) {
             
@@ -277,12 +286,19 @@ namespace exprparse {
                     break;
             }
 
-            if(begin != it)
+            if(begin != it) // Right hand side is non-empty
+            {
                 node->LinkLeft( ParseSubString(begin, it, status));
+            }
             else if(operator_symbol == '-') // Negative sign (-x becomes 0 - x)
+            {
+                EP_LOG("   Negating sub-expression")
                 node->LinkLeft(std::make_shared<_internal::ConstantNode<T>>(T(0)));
-            else
+            }
+            else // RH is empty but operator is not minus
+            {
                 _exprparse_parse_error(Error_Syntax_Error);
+            }
 
             node->LinkRight(ParseSubString(it + 1, end,  status));
             //                             ^^^^^^ --- plus one to omit operator        
@@ -291,7 +307,7 @@ namespace exprparse {
 
         } else {
             
-            // Strip brackets
+            // Strip potential brackets
             if(*begin == '(' && *(end - 1) == ')')
             {
                 EP_LOG("  Stripping brackets");
@@ -302,7 +318,9 @@ namespace exprparse {
                 if(begin == end) // Empty bracket
                     return std::make_shared<_internal::ConstantNode<T>>(T(0));
 
-                if(begin > end) // Syntax error
+                if(begin > end) 
+                    // Only happens if substring is odd length 
+                    // (meaning start- and end brackets aren't one-to-one)
                     _exprparse_parse_error(Error_Syntax_Error);
 
                 return ParseSubString(begin, end, status);
@@ -312,7 +330,7 @@ namespace exprparse {
             std::stringstream ss;
             ss << std::string(begin, end);
             T value;
-            ss >> value;
+            ss >> value; // Try converting to T (double / float)
 
             if(!ss.fail()) {
                 EP_LOG("   Appending constant node: " << value);
