@@ -21,25 +21,30 @@ Not very effective.
 #include "exprparse.hpp"
 #include <iostream>
 
+double square(double x)
+{
+    return x * x;
+}
+
 int main() {
 
     exprparse::Expression<double> e;
 
 
     // Register variables
-    auto x = exprparse::CreateVariable<double>(0);
-    auto y = exprparse::CreateVariable<double>(0);
-    auto z = exprparse::CreateVariable<double>(0);
+    auto x = std::make_shared<double>(0);
+    auto y = std::make_shared<double>(0);
 
     e.RegisterVariable("x", x);
     e.RegisterVariable("y", y);
-    e.RegisterVariable("z", z);
+
+    e.RegisterFunction("square", square);
 
 
 
     // Parse expression
     exprparse::Status status;
-    status = e.Parse("-(2 * x + y) / z");
+    status = e.Parse("x + square(y)");
 
     if(status != exprparse::Success)
     {
@@ -50,9 +55,8 @@ int main() {
 
 
     // Set variables
-    exprparse::SetVariable(x, 3.0);
-    exprparse::SetVariable(y, 4.0);
-    exprparse::SetVariable(z, 2.0);
+    *x = 1;
+    *y = 3;
 
 
     // Evaluate expression
