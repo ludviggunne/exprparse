@@ -86,14 +86,14 @@ namespace exprparse {
                 }
             }
 
-            void LinkLeft(const std::shared_ptr<Node>  &left)  { _left  = left; }
-            void LinkRight(const std::shared_ptr<Node> &right) { _right = right; }
+            void LinkLeft(const std::shared_ptr<Node<T>>  &left)  { _left  = left; }
+            void LinkRight(const std::shared_ptr<Node<T>> &right) { _right = right; }
 
         private:
             Operator _operator;
 
-            std::shared_ptr<Node> _left;
-            std::shared_ptr<Node> _right;
+            std::shared_ptr<Node<T>> _left;
+            std::shared_ptr<Node<T>> _right;
         };
 
 
