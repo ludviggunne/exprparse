@@ -11,8 +11,10 @@
 
 #ifdef EP_DEBUG
 #include <iostream>     // std::cout
+#define EP_LOG_INDENT() for(int _i = 0; _i < rec_depth; _i++) std::cout << "  ";
 #define EP_LOG(x) std::cout << x << "\n\n";
 #else
+#define EP_LOG_INDENT()
 #define EP_LOG(x)
 #endif
 
@@ -194,7 +196,11 @@ namespace exprparse {
 
     private:
         std::shared_ptr<_internal::Node<T>> ParseSubString(
-            std::string::const_iterator begin, std::string::const_iterator end, Status &status);
+            std::string::const_iterator begin, std::string::const_iterator end, Status &status
+        #ifdef EP_DEBUG
+        , int rec_depth
+        #endif    
+        );
 
     private:
         std::map<std::string, std::shared_ptr<T>> _symbols;
@@ -204,6 +210,11 @@ namespace exprparse {
     };
 
 
+#ifdef EP_DEBUG
+#define _exprparse_parse_substring(b, e, s) ParseSubString(b, e, s, rec_depth + 1)
+#else
+#define _exprparse_parse_substring(b, e, s) ParseSubString(b, e, s)
+#endif
 
     template<typename T>
     Status Expression<T>::Parse(std::string expr_string)
@@ -215,7 +226,11 @@ namespace exprparse {
 
         // Parse
         Status status = Success;
-        _base = ParseSubString(expr_string.begin(), new_end, status);
+        _base = ParseSubString(expr_string.begin(), new_end, status
+        #ifdef EP_DEBUG
+        , 0
+        #endif
+        );
 
         if (status != Success) // Clear the AST since it's invalid
             _base.reset();
@@ -225,12 +240,26 @@ namespace exprparse {
 
 
 
-#define _exprparse_parse_error(error) { status = error; return nullptr; }
+#define _exprparse_parse_error(error) {\
+EP_LOG_INDENT();\
+EP_LOG(#error);\
+status = error;\
+return nullptr;\
+}
+
     template<typename T>
     std::shared_ptr<_internal::Node<T>> Expression<T>::ParseSubString(
-        std::string::const_iterator begin, std::string::const_iterator end, Status &status)
+        std::string::const_iterator begin, std::string::const_iterator end, Status &status
+        #ifdef EP_DEBUG
+        , int rec_depth
+        #endif  
+        )
     {
-        EP_LOG(" Parsing sub-expression '" << std::string(begin, end) << "'");
+        EP_LOG_INDENT();
+        #ifdef EP_DEBUG
+        rec_depth++;
+        #endif
+        EP_LOG("SUB_EXPR '" << std::string(begin, end) << "'");
 
         auto it                   = begin;
         int  bracket_depth        = 0;     
@@ -249,7 +278,8 @@ namespace exprparse {
                     found_plus_or_minus = true;
                     operator_symbol     = *it;
 
-                    EP_LOG("  Found operator " << *it);
+                    EP_LOG_INDENT();
+                    EP_LOG("OPERATOR " << *it);
                     break;
                 }
             }
@@ -274,7 +304,8 @@ namespace exprparse {
                     {
                         operator_symbol = *it;
 
-                        EP_LOG("  Found operator " << *it);
+                        EP_LOG_INDENT();
+                        EP_LOG("OPERATOR " << *it);
                         break;
                     }
                 }
@@ -292,22 +323,26 @@ namespace exprparse {
             switch (operator_symbol) {
                 case '+':
                     node = std::make_shared<OperatorNode<T>>(OperatorNode<T>::Operator::Add);
-                    EP_LOG("   Appending Addition node");
+                    EP_LOG_INDENT();
+                    EP_LOG("ADD_NODE");
                     break;
 
                 case '-':
                     node = std::make_shared<OperatorNode<T>>(OperatorNode<T>::Operator::Sub);
-                    EP_LOG("   Appending Subtraction node");
+                    EP_LOG_INDENT();
+                    EP_LOG("SUB_NODE");
                     break;
 
                 case '*':
                     node = std::make_shared<OperatorNode<T>>(OperatorNode<T>::Operator::Mul);
-                    EP_LOG("   Appending Multiplication node");
+                    EP_LOG_INDENT();
+                    EP_LOG("MUL_NODE");
                     break;
 
                 case '/':
                     node = std::make_shared<OperatorNode<T>>(OperatorNode<T>::Operator::Div);
-                    EP_LOG("   Appending Division node");
+                    EP_LOG_INDENT();
+                    EP_LOG("DIV_NODE");
                     break;
 
                 default:
@@ -317,11 +352,12 @@ namespace exprparse {
 
             if (begin != it) // Right hand side is non-empty
             {
-                node->LinkLeft( ParseSubString(begin, it, status));
+                node->LinkLeft( _exprparse_parse_substring(begin, it, status));
             }
             else if (operator_symbol == '-') // Negative sign (-x becomes 0 - x)
             {
-                EP_LOG("   Negating sub-expression")
+                EP_LOG_INDENT();
+                EP_LOG("NEGATE")
                 node->LinkLeft(std::make_shared<_internal::ConstantNode<T>>(T(0)));
             }
             else // RH is empty but operator is not minus
@@ -329,7 +365,7 @@ namespace exprparse {
                 _exprparse_parse_error(Error_Syntax_Error);
             }
 
-            node->LinkRight(ParseSubString(it + 1, end,  status));
+            node->LinkRight(_exprparse_parse_substring(it + 1, end,  status));
             //                             ^^^^^^ --- plus one to omit operator        
 
             if (status == Success)
@@ -342,7 +378,8 @@ namespace exprparse {
             // Strip potential brackets
             if (*begin == '(' && *(end - 1) == ')')
             {
-                EP_LOG("  Stripping brackets");
+                EP_LOG_INDENT();
+                EP_LOG("STRIP_BRACKETS");
 
                 begin++; 
                 end--;
@@ -355,7 +392,7 @@ namespace exprparse {
                     // (meaning start- and end brackets aren't one-to-one)
                     _exprparse_parse_error(Error_Syntax_Error);
 
-                return ParseSubString(begin, end, status);
+                return _exprparse_parse_substring(begin, end, status);
             }
 
             // Check for constant
@@ -365,7 +402,8 @@ namespace exprparse {
             ss >> value; // Try converting to T (double / float)
 
             if (!ss.fail()) {
-                EP_LOG("   Appending constant node: " << value);
+                EP_LOG_INDENT();
+                EP_LOG("CONST_NODE " << value);
 
                 return std::make_shared<_internal::ConstantNode<T>>(value);
             } 
@@ -376,7 +414,8 @@ namespace exprparse {
 
                 if (v_it != _symbols.end())
                 {
-                    EP_LOG("   Appending variable node: " << v_it->first);
+                    EP_LOG_INDENT();
+                    EP_LOG("VAR_NODE " << v_it->first);
 
                     return std::make_shared<_internal::VariableNode<T>>(v_it->second);
                     //                                           SYMBOL --- ^^^^^^
@@ -399,12 +438,13 @@ namespace exprparse {
                 auto f_it = _functions.find(std::string(begin, func_end));
                 if (f_it != _functions.end())
                 {
-                    EP_LOG("   Appending function node: " << f_it->first);
+                    EP_LOG_INDENT();
+                    EP_LOG("FUNC_NODE " << f_it->first);
 
                     auto node = std::make_shared<_internal::FunctionNode<T>>(f_it->second);
 
-                    // Evaluate argument
-                    auto arg = ParseSubString(func_end + 1, end - 1, status);
+                    // Evaluate argument               vvv ---- vvv --- Strip brackets
+                    auto arg = _exprparse_parse_substring(func_end + 1, end - 1, status);
                     if (status != Success)
                         return nullptr;
 
