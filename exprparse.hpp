@@ -37,19 +37,6 @@ namespace exprparse {
     };
 
 
-
-    // TODO?: Custom ref-counted class OR wrapper class for std::shared_ptr
-    template<typename T>
-    using Variable = std::shared_ptr<T>;
-
-    template<typename T>
-    Variable<T> CreateVariable(T value) { return std::make_shared<T>(value); }
-
-    template<typename T>
-    void SetVariable(Variable<T> &var, T value) { *var = value; }
-
-
-
     namespace _internal {
 
         template<typename T>
@@ -160,7 +147,7 @@ namespace exprparse {
         static_assert(std::is_floating_point<T>::value, "T is not floating point type");
 
     public:
-        Status RegisterVariable(const std::string &name, const Variable<T> &value)
+        Status RegisterVariable(const std::string &name, const std::shared_ptr<T> &variable)
         {
             EP_LOG("Registered variable " << name);
 
