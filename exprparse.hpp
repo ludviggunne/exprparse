@@ -60,7 +60,7 @@ namespace exprparse {
                 T leftValue  = _left->Eval(status);
                 T rightValue = _right->Eval(status);
 
-                switch(_operator) {
+                switch (_operator) {
                     
                     // TODO?: Use derived classes for each operator instead of enum + switch
                     case Operator::Add:
@@ -180,7 +180,7 @@ namespace exprparse {
         {
             EP_LOG("Evaluating expression");
 
-            if(!_base) { // The AST is empty
+            if (!_base) { // The AST is empty
                 status = Error_Not_Compiled;
                 return T(0);
             } 
@@ -216,7 +216,7 @@ namespace exprparse {
         Status status = Success;
         _base = ParseSubString(expr_string.begin(), new_end, status);
 
-        if(status != Success) // Clear the AST since it's invalid
+        if (status != Success) // Clear the AST since it's invalid
             _base.reset();
 
         return status;
@@ -236,12 +236,12 @@ namespace exprparse {
         char operator_symbol      = '\0';
         bool found_plus_or_minus  = false; // +/- has precedence over *// when constructing tree
 
-        while(it != end) {
+        while (it != end) {
             
-            if(*it == '(') bracket_depth++;
-            if(*it == ')') bracket_depth--;
+            if (*it == '(') bracket_depth++;
+            if (*it == ')') bracket_depth--;
 
-            if(bracket_depth == 0) { // Only look for operator if outside paranthesis
+            if (bracket_depth == 0) { // Only look for operator if outside paranthesis
 
                 if (*it == '+' || *it == '-')
                 {
@@ -256,18 +256,18 @@ namespace exprparse {
             it++;
         }
 
-        if(bracket_depth != 0) // Start- and end brackets should cancel out
+        if (bracket_depth != 0) // Start- and end brackets should cancel out
             _exprparse_parse_error(Error_Syntax_Error);
 
-        if(!found_plus_or_minus) { // Only pick * or / operators if + or - aren't found
+        if (!found_plus_or_minus) { // Only pick * or / operators if + or - aren't found
             
             it = begin;
-            while(it != end) {
+            while (it != end) {
             
-                if(*it == '(') bracket_depth++;
-                if(*it == ')') bracket_depth--;
+                if (*it == '(') bracket_depth++;
+                if (*it == ')') bracket_depth--;
 
-                if(bracket_depth == 0) { // Only look for operator if outside paranthesis
+                if (bracket_depth == 0) { // Only look for operator if outside paranthesis
 
                     if (*it == '*' || *it == '/')
                     {
@@ -282,13 +282,13 @@ namespace exprparse {
             }
         }
 
-        if(operator_symbol != '\0') {
+        if (operator_symbol != '\0') {
 
             using namespace _internal;
 
             std::shared_ptr<OperatorNode<T>> node;
 
-            switch(operator_symbol) {
+            switch (operator_symbol) {
                 case '+':
                     node = std::make_shared<OperatorNode<T>>(OperatorNode<T>::Operator::Add);
                     EP_LOG("   Appending Addition node");
@@ -314,11 +314,11 @@ namespace exprparse {
                     break;
             }
 
-            if(begin != it) // Right hand side is non-empty
+            if (begin != it) // Right hand side is non-empty
             {
                 node->LinkLeft( ParseSubString(begin, it, status));
             }
-            else if(operator_symbol == '-') // Negative sign (-x becomes 0 - x)
+            else if (operator_symbol == '-') // Negative sign (-x becomes 0 - x)
             {
                 EP_LOG("   Negating sub-expression")
                 node->LinkLeft(std::make_shared<_internal::ConstantNode<T>>(T(0)));
@@ -331,7 +331,7 @@ namespace exprparse {
             node->LinkRight(ParseSubString(it + 1, end,  status));
             //                             ^^^^^^ --- plus one to omit operator        
 
-            if(status == Success)
+            if (status == Success)
                 return node;
             else
                 return nullptr;
@@ -339,17 +339,17 @@ namespace exprparse {
         } else {
             
             // Strip potential brackets
-            if(*begin == '(' && *(end - 1) == ')')
+            if (*begin == '(' && *(end - 1) == ')')
             {
                 EP_LOG("  Stripping brackets");
 
                 begin++; 
                 end--;
 
-                if(begin == end) // Empty bracket
+                if (begin == end) // Empty bracket
                     return std::make_shared<_internal::ConstantNode<T>>(T(0));
 
-                if(begin > end) 
+                if (begin > end) 
                     // Only happens if substring is odd length 
                     // (meaning start- and end brackets aren't one-to-one)
                     _exprparse_parse_error(Error_Syntax_Error);
@@ -363,7 +363,7 @@ namespace exprparse {
             T value;
             ss >> value; // Try converting to T (double / float)
 
-            if(!ss.fail()) {
+            if (!ss.fail()) {
                 EP_LOG("   Appending constant node: " << value);
 
                 return std::make_shared<_internal::ConstantNode<T>>(value);
