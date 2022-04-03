@@ -149,14 +149,15 @@ namespace exprparse {
     public:
         Status RegisterVariable(const std::string &name, const std::shared_ptr<T> &variable)
         {
-            EP_LOG("Registered variable " << name);
+            EP_LOG("Registering variable " << name);
 
             // Check for function with same name
             auto it = _functions.find(name);
             if (it != _functions.end())
                 return Error_Variable_Function_Name_Clash;
 
-            auto pair = _symbols.try_emplace(name, value);
+            // Try inserting new variable
+            auto pair = _symbols.try_emplace(name, variable);
             return pair.second ? Success : Error_Variable_Already_Registered;
             //          ^^^^^^ --- False if key-value pair already exists
         }
