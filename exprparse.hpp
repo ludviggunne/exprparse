@@ -7,6 +7,7 @@
 #include <sstream>      // std::stringstream
 #include <algorithm>    // std::remove
 #include <type_traits>  // std::is_floating_point
+#include <functional>   // std::function
 
 #ifdef EP_DEBUG
 #include <iostream>     // std::cout
@@ -22,6 +23,9 @@ namespace exprparse {
         Success,
 
         Error_Variable_Already_Registered,
+        Error_Function_Already_Registered,
+        Error_Variable_Function_Name_Clash,
+
         Error_Not_Compiled,
         Error_Division_By_Zero,
 
@@ -131,6 +135,21 @@ namespace exprparse {
             const T _value;
         };
 
+
+
+        template<typename T>
+        class FunctionNode : public Node<T> {
+        public:
+            FunctionNode(const std::function<T(T)> &function) : _function(function) {}
+
+            virtual T Eval(Status &status) const override { return _function(_argument->Eval(status)); }
+
+            void LinkArgument(const std::shared_ptr<Node<T>> &arg) { _argument = arg; }
+
+        private:
+            std::function<T(T)> _function;
+            std::shared_ptr<Node<T>> _argument;
+        };
     }
 
 
@@ -145,8 +164,28 @@ namespace exprparse {
         {
             EP_LOG("Registered variable " << name);
 
+            // Check for function with same name
+            auto it = _functions.find(name);
+            if (it != _functions.end())
+                return Error_Variable_Function_Name_Clash;
+
             auto pair = _symbols.try_emplace(name, value);
             return pair.second ? Success : Error_Variable_Already_Registered;
+            //          ^^^^^^ --- False if key-value pair already exists
+        }
+
+        Status RegisterFunction(const std::string &name, const std::function<T(T)> &function)
+        {
+            EP_LOG("Registering function " << name);
+
+            // Check for variable with same name
+            auto it = _symbols.find(name);
+            if (it != _symbols.end())
+                return Error_Variable_Function_Name_Clash;
+
+            // Try inserting new function
+            auto pair = _functions.try_emplace(name, function);
+            return pair.second ? Success : Error_Function_Already_Registered;
             //          ^^^^^^ --- False if key-value pair already exists
         }
 
@@ -171,6 +210,8 @@ namespace exprparse {
 
     private:
         std::map<std::string, std::shared_ptr<T>> _symbols;
+        std::map<std::string, std::function<T(T)>> _functions;
+
         std::shared_ptr<_internal::Node<T>> _base;
     };
 
@@ -343,18 +384,47 @@ namespace exprparse {
             else 
             {
                 // Look for variable
-                auto it = _symbols.find(std::string(begin, end));
+                auto v_it = _symbols.find(std::string(begin, end));
 
-                if(it == _symbols.end())
+                if (v_it != _symbols.end())
                 {
-                    _exprparse_parse_error(Error_Syntax_Error);
-                } 
-                else 
-                {
-                    EP_LOG("   Appending variable node: " << it->first);
+                    EP_LOG("   Appending variable node: " << v_it->first);
 
-                    return std::make_shared<_internal::VariableNode<T>>(it->second);
+                    return std::make_shared<_internal::VariableNode<T>>(v_it->second);
                     //                                           SYMBOL --- ^^^^^^
+                }
+
+                // Look for function
+                auto func_end = begin;
+
+                // Sub expression must end with left bracket
+                if(*(end - 1) != ')')
+                    _exprparse_parse_error(Error_Syntax_Error);
+
+                // Extract function name before parenthesis
+                while (func_end != end && *func_end != '(')
+                    func_end++;
+                if (*func_end != '(') // Function has no arguments
+                    _exprparse_parse_error(Error_Syntax_Error);
+
+                
+                auto f_it = _functions.find(std::string(begin, func_end));
+                if (f_it != _functions.end())
+                {
+                    EP_LOG("   Appending function node: " << f_it->first);
+
+                    auto node = std::make_shared<_internal::FunctionNode<T>>(f_it->second);
+
+                    // Evaluate argument
+                    auto arg = ParseSubString(func_end + 1, end - 1, status);
+                    if (status != Success)
+                        return nullptr;
+
+                    node->LinkArgument(arg);
+                    return node;
+
+                } else {
+                    _exprparse_parse_error(Error_Unregistered_Symbol);
                 }
             }
 
