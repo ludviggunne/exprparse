@@ -15,6 +15,8 @@ Not very effective.
 
 #### Example program:  
 
+Define `EP_DEBUG` to log debug info.
+
 `main.cpp:`  
 
 ```C++
