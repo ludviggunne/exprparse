@@ -1,7 +1,6 @@
 # ExprParse
 
 Single header template library for parsing and evaluating math expressions.  
-Not very effective.
 
 ## Integration
 ### CMake
